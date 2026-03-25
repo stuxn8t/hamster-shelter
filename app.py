@@ -105,10 +105,17 @@ st.markdown("""
     font-size: 2rem;
     margin-bottom: 8px;
 }
-[data-testid="stImage"] img {
-    height: 120px !important;
+[data-testid="stImage"] img,
+[data-testid="stImage"] > img,
+.stImage img {
+    height: 240px !important;
+    width: 100% !important;
     object-fit: cover !important;
     border-radius: 8px !important;
+}
+[data-testid="stImage"] {
+    height: 240px !important;
+    overflow: hidden !important;
 }
 .card-name {
     font-size: 1rem;
