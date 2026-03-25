@@ -225,12 +225,18 @@ for row in rows:
                 "complete" if "입양" in state or "종료" in state else "etc",
                 '<span class="badge-etc">기타</span>'
             )
-            img_tag = f'<img src="{img_url}" onerror="this.style.display=\'none\'">' if img_url else \
-                      '<div style="height:180px;background:#F1F5F9;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2rem">🐹</div>'
+            notice_edt_fmt = f"{notice_edt[:4]}-{notice_edt[4:6]}-{notice_edt[6:]}" if len(notice_edt) == 8 else notice_edt
+
+            if img_url:
+                try:
+                    st.image(img_url, use_container_width=True)
+                except Exception:
+                    st.markdown('<div style="height:180px;background:#F1F5F9;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2rem">🐹</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div style="height:180px;background:#F1F5F9;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2rem">🐹</div>', unsafe_allow_html=True)
 
             st.markdown(f"""
 <div class="card">
-  {img_tag}
   <div class="card-name">{kind_nm} {badge}</div>
   <div class="card-info">
     📋 {notice_no}<br>
@@ -238,7 +244,7 @@ for row in rows:
     🎨 {color}<br>
     🏠 {shelter}<br>
     📍 {org}<br>
-    📅 공고 마감: {notice_edt[:4]}-{notice_edt[4:6]}-{notice_edt[6:]} if len(notice_edt) == 8 else {notice_edt}<br>
+    📅 공고 마감: {notice_edt_fmt}<br>
     💬 {feature}
   </div>
 </div>""", unsafe_allow_html=True)
