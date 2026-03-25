@@ -43,43 +43,31 @@ def get_sigungu_list(sido_code):
     except Exception:
         return []
 
-def get_abandoned_hamsters(sido_code="", sigungu_code="", state=""):
+def get_abandoned_hamsters(sido_code="", sigungu_code="", state="", page=1, num_of_rows=20):
     url = f"{BASE_URL}/abandonmentPublic_v2"
-    base_params = {
+    params = {
         "serviceKey": API_KEY,
         "upkind": "429900",
         "upr_cd": sido_code,
         "org_cd": sigungu_code,
         "state": state,
-        "numOfRows": 100,
+        "pageNo": page,
+        "numOfRows": num_of_rows,
         "_type": "json",
     }
-    base_params = {k: v for k, v in base_params.items() if v}
-
-    all_items = []
-    page = 1
-    total_count = 0
-
-    while True:
-        try:
-            params = {**base_params, "pageNo": page}
-            r = requests.get(url, params=params, timeout=10)
-            body = r.json().get("response", {}).get("body", {})
-            if page == 1:
-                total_count = int(body.get("totalCount", 0))
-            items = body.get("items", {}).get("item", [])
-            if isinstance(items, dict):
-                items = [items]
-            if not isinstance(items, list) or not items:
-                break
-            all_items.extend(items)
-            if len(all_items) >= total_count:
-                break
-            page += 1
-        except Exception:
-            break
-
-    return all_items, total_count
+    params = {k: v for k, v in params.items() if v}
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        body = r.json().get("response", {}).get("body", {})
+        total_count = int(body.get("totalCount", 0))
+        items = body.get("items", {}).get("item", [])
+        if isinstance(items, dict):
+            items = [items]
+        if not isinstance(items, list):
+            items = []
+        return items, total_count
+    except Exception:
+        return [], 0
 
 
 # ==========================================
@@ -171,6 +159,8 @@ with col1:
         code = item.get("orgCd") or item.get("sidoCd") or item.get("code", "")
         if name and code:
             sido_options[name] = code
+    if sido_list and len(sido_options) == 1:
+        st.caption(f"디버그: {sido_list[0] if sido_list else '없음'}")
     selected_sido_name = st.selectbox("시도", list(sido_options.keys()))
     selected_sido_code = sido_options[selected_sido_name]
 
@@ -196,6 +186,19 @@ with col3:
 st.divider()
 
 # ==========================================
+# 페이지 상태
+# ==========================================
+PER_PAGE = 20
+if "page" not in st.session_state:
+    st.session_state.page = 1
+
+# 필터 변경 시 페이지 초기화
+filter_key = f"{selected_sido_code}_{selected_sigungu_code}_{selected_state}"
+if st.session_state.get("filter_key") != filter_key:
+    st.session_state.page = 1
+    st.session_state.filter_key = filter_key
+
+# ==========================================
 # 데이터 로드
 # ==========================================
 with st.spinner("🐹 유기 햄스터 공고를 불러오는 중..."):
@@ -203,6 +206,8 @@ with st.spinner("🐹 유기 햄스터 공고를 불러오는 중..."):
         sido_code=selected_sido_code,
         sigungu_code=selected_sigungu_code,
         state=selected_state,
+        page=st.session_state.page,
+        num_of_rows=PER_PAGE,
     )
 
 if not animals:
@@ -214,7 +219,8 @@ if not animals:
 </div>""", unsafe_allow_html=True)
     st.stop()
 
-st.markdown(f"**총 {total}건** 중 {len(animals)}건 표시")
+total_pages = max(1, -(-total // PER_PAGE))
+st.markdown(f"**총 {total}건** | {st.session_state.page} / {total_pages} 페이지")
 
 # ==========================================
 # 카드 목록
@@ -274,3 +280,21 @@ for row in rows:
     💬 {feature}
   </div>
 </div>{card_link_close}""", unsafe_allow_html=True)
+
+# ==========================================
+# 페이지 버튼
+# ==========================================
+st.divider()
+pcol1, pcol2, pcol3 = st.columns([1, 2, 1])
+with pcol1:
+    if st.session_state.page > 1:
+        if st.button("◀ 이전"):
+            st.session_state.page -= 1
+            st.rerun()
+with pcol2:
+    st.markdown(f"<div style='text-align:center;padding-top:6px'>{st.session_state.page} / {total_pages}</div>", unsafe_allow_html=True)
+with pcol3:
+    if st.session_state.page < total_pages:
+        if st.button("다음 ▶"):
+            st.session_state.page += 1
+            st.rerun()
