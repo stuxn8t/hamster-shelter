@@ -208,7 +208,7 @@ for row in rows:
     cols = st.columns(COLS)
     for col, animal in zip(cols, row):
         with col:
-            img_url = animal.get("popfile", "").replace("http://", "https://")
+            img_url = animal.get("popfile", "")
             kind_nm = animal.get("kindNm", "햄스터")
             notice_no = animal.get("noticeNo", "")
             sex = {"M": "수컷", "F": "암컷", "Q": "미상"}.get(animal.get("sexCd", "Q"), "미상")
