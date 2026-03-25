@@ -99,10 +99,7 @@ st.markdown("""
 <style>
 .card {
     background: #fff;
-    border-radius: 12px;
-    padding: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    margin-bottom: 16px;
+    padding: 4px 4px 8px 4px;
     height: 100%;
 }
 .card-placeholder {
@@ -125,14 +122,23 @@ st.markdown("""
 .card-name {
     font-size: 1rem;
     font-weight: 700;
-    margin-top: 8px;
-    color: #1E293B;
+    margin-top: 10px;
+    margin-bottom: 6px;
+    color: #0F172A;
 }
 .card-info {
-    font-size: 0.82rem;
-    color: #64748B;
-    margin-top: 4px;
-    line-height: 1.5;
+    font-size: 0.83rem;
+    color: #334155;
+    margin-top: 0;
+    line-height: 1.8;
+}
+.card-info br + * , .card-info {
+    display: block;
+}
+.card-divider {
+    border: none;
+    border-top: 1px solid #F1F5F9;
+    margin: 6px 0;
 }
 .badge-protect {
     background: #DBEAFE;
@@ -281,6 +287,7 @@ for row in rows:
     cols = st.columns(COLS)
     for col, animal in zip(cols, row):
         with col:
+          with st.container(border=True):
             img_url = animal.get("popfile1", "") or animal.get("popfile2", "")
             kind_nm = animal.get("kindNm", "햄스터")
             notice_no = animal.get("noticeNo", "")
@@ -316,13 +323,16 @@ for row in rows:
 {card_link_open}<div class="card">
   <div class="card-name">{kind_nm} {badge}</div>
   <div class="card-info">
-    📋 {notice_no}<br>
-    ⚥ {sex} | 🎂 {age} | ⚖️ {weight}<br>
+    <span style="color:#94A3B8;font-size:0.75rem">📋 {notice_no}</span><br>
+    <hr class="card-divider">
+    ⚥ <b>{sex}</b> &nbsp;|&nbsp; 🎂 <b>{age}</b> &nbsp;|&nbsp; ⚖️ <b>{weight}</b><br>
     🎨 {color}<br>
-    🏠 {shelter}<br>
+    <hr class="card-divider">
+    🏠 <b>{shelter}</b><br>
     📍 {org}<br>
-    {f"🚑 구조일시: {happen_dt_fmt}<br>" if happen_dt_fmt else ""}📅 공고 마감: {notice_edt_fmt}<br>
-    💬 {feature}
+    <hr class="card-divider">
+    {f"🚑 구조일: <b>{happen_dt_fmt}</b><br>" if happen_dt_fmt else ""}📅 마감: <b>{notice_edt_fmt}</b><br>
+    💬 <span style="color:#475569">{feature}</span>
   </div>
 </div>{card_link_close}""", unsafe_allow_html=True)
 
