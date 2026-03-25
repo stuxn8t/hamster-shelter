@@ -1,7 +1,6 @@
 import os
 import requests
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 from dotenv import load_dotenv
 
@@ -289,7 +288,6 @@ with pcol1:
     if st.session_state.page > 1:
         if st.button("◀ 이전"):
             st.session_state.page -= 1
-            st.session_state.scroll_top = True
             st.rerun()
 with pcol2:
     st.markdown(f"<div style='text-align:center;padding-top:6px'>{st.session_state.page} / {total_pages}</div>", unsafe_allow_html=True)
@@ -297,9 +295,4 @@ with pcol3:
     if st.session_state.page < total_pages:
         if st.button("다음 ▶"):
             st.session_state.page += 1
-            st.session_state.scroll_top = True
             st.rerun()
-
-if st.session_state.get("scroll_top"):
-    st.session_state.scroll_top = False
-    components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
