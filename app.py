@@ -220,6 +220,8 @@ for row in rows:
             color = animal.get("colorCd", "")
             weight = animal.get("weight", "")
             feature = animal.get("specialMark", "")
+            desertion_no = animal.get("desertionNo", "")
+            detail_url = f"https://www.animal.go.kr/front/awtis/public/publicView.do?boardNo={desertion_no}" if desertion_no else ""
             badge = STATE_BADGE.get(
                 "protect" if "보호" in state else
                 "complete" if "입양" in state or "종료" in state else "etc",
@@ -235,8 +237,11 @@ for row in rows:
             else:
                 st.markdown('<div style="height:180px;background:#F1F5F9;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:2rem">🐹</div>', unsafe_allow_html=True)
 
+            card_link_open = f'<a href="{detail_url}" target="_blank" style="text-decoration:none;color:inherit;">' if detail_url else ""
+            card_link_close = "</a>" if detail_url else ""
+
             st.markdown(f"""
-<div class="card">
+{card_link_open}<div class="card">
   <div class="card-name">{kind_nm} {badge}</div>
   <div class="card-info">
     📋 {notice_no}<br>
@@ -245,7 +250,6 @@ for row in rows:
     🏠 {shelter}<br>
     📍 {org}<br>
     📅 공고 마감: {notice_edt_fmt}<br>
-    💬 {feature}<br>
-    🖼️ {img_url}
+    💬 {feature}
   </div>
-</div>""", unsafe_allow_html=True)
+</div>{card_link_close}""", unsafe_allow_html=True)
