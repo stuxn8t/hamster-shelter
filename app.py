@@ -181,6 +181,10 @@ with st.spinner("🐹 유기 햄스터 공고를 불러오는 중..."):
         state=selected_state,
     )
 
+if animals:
+    with st.expander("🔍 첫 번째 동물 raw 데이터"):
+        st.json(animals[0])
+
 if not animals:
     st.markdown("""
 <div style="text-align:center;padding:80px 20px;color:#94A3B8">
