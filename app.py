@@ -169,7 +169,7 @@ with col2:
         for item in sigungu_list:
             name = item.get("orgdownNm") or item.get("orgNm") or item.get("sigungunm") or item.get("name", "")
             code = item.get("orgCd") or item.get("sigunguCd") or item.get("code", "")
-            if name and code:
+            if name and code and code != selected_sido_code and name not in ("가정보호",):
                 sigungu_options[name] = code
     else:
         sigungu_options = {"전체": ""}
