@@ -3,7 +3,6 @@ import requests
 import streamlit as st
 import pandas as pd
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -45,14 +44,9 @@ def get_sigungu_list(sido_code):
 
 def get_abandoned_hamsters(sido_code="", sigungu_code="", state="", page=1, num_of_rows=20):
     url = f"{BASE_URL}/abandonmentPublic_v2"
-    today = datetime.today()
-    bgnde = (today - timedelta(days=30)).strftime("%Y%m%d")
-    endde = today.strftime("%Y%m%d")
     params = {
         "serviceKey": API_KEY,
         "upkind": "429900",
-        "bgnde": bgnde,
-        "endde": endde,
         "upr_cd": sido_code,
         "org_cd": sigungu_code,
         "state": state,
