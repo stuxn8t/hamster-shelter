@@ -43,11 +43,25 @@ def get_sigungu_list(sido_code):
     except Exception:
         return []
 
-def get_abandoned_hamsters(sido_code="", sigungu_code="", state="", page=1, num_of_rows=20):
+@st.cache_data(ttl=3600)
+def get_kind_list():
+    url = f"{BASE_URL}/kind_v2"
+    params = {"serviceKey": API_KEY, "up_kind_cd": "429900", "numOfRows": 100, "_type": "json"}
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        items = r.json().get("response", {}).get("body", {}).get("items", {}).get("item", [])
+        if not isinstance(items, list):
+            items = [items]
+        return items
+    except Exception:
+        return []
+
+def get_abandoned_hamsters(sido_code="", sigungu_code="", kind_code="", state="", page=1, num_of_rows=20):
     url = f"{BASE_URL}/abandonmentPublic_v2"
     params = {
         "serviceKey": API_KEY,
         "upkind": "429900",
+        "kind": kind_code,
         "upr_cd": sido_code,
         "org_cd": sigungu_code,
         "state": state,
@@ -149,7 +163,7 @@ st.divider()
 # ==========================================
 # 필터
 # ==========================================
-col1, col2, col3 = st.columns([1, 1, 1])
+col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
 
 with col1:
     sido_list = get_sido_list()
@@ -179,6 +193,17 @@ with col2:
     selected_sigungu_code = sigungu_options[selected_sigungu_name]
 
 with col3:
+    kind_list = get_kind_list()
+    kind_options = {"전체": ""}
+    for item in kind_list:
+        name = item.get("kindNm", "")
+        code = str(item.get("kindCd", ""))
+        if name and code:
+            kind_options[name] = code
+    selected_kind_name = st.selectbox("동물종류", list(kind_options.keys()))
+    selected_kind_code = kind_options[selected_kind_name]
+
+with col4:
     state_options = {"보호중": "protect", "전체": "", "입양완료": "complete", "기타": "etc"}
     selected_state_name = st.selectbox("상태", list(state_options.keys()))
     selected_state = state_options[selected_state_name]
@@ -193,7 +218,7 @@ if "page" not in st.session_state:
     st.session_state.page = 1
 
 # 필터 변경 시 페이지 초기화
-filter_key = f"{selected_sido_code}_{selected_sigungu_code}_{selected_state}"
+filter_key = f"{selected_sido_code}_{selected_sigungu_code}_{selected_kind_code}_{selected_state}"
 if st.session_state.get("filter_key") != filter_key:
     st.session_state.page = 1
     st.session_state.filter_key = filter_key
@@ -205,6 +230,7 @@ with st.spinner("🐹 유기 햄스터 공고를 불러오는 중..."):
     animals, total = get_abandoned_hamsters(
         sido_code=selected_sido_code,
         sigungu_code=selected_sigungu_code,
+        kind_code=selected_kind_code,
         state=selected_state,
         page=st.session_state.page,
         num_of_rows=PER_PAGE,
