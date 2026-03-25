@@ -3,6 +3,7 @@ import requests
 import streamlit as st
 import pandas as pd
 from dotenv import load_dotenv
+from datetime import datetime, date
 
 load_dotenv()
 
@@ -12,9 +13,8 @@ except Exception:
     API_KEY = os.environ.get("API_KEY", "")
 BASE_URL = "http://apis.data.go.kr/1543061/abandonmentPublicService_v2"
 
-
 st.set_page_config(
-    page_title="유기 햄스터 보호 현황",
+    page_title="유기 기타축종 보호 현황",
     page_icon="🐹",
     layout="wide",
 )
@@ -23,6 +23,7 @@ st.set_page_config(
 # API 호출 함수
 # ==========================================
 
+@st.cache_data(ttl=3600)
 def get_sido_list():
     url = f"{BASE_URL}/sido_v2"
     params = {"serviceKey": API_KEY, "numOfRows": 100, "_type": "json"}
@@ -33,6 +34,7 @@ def get_sido_list():
     except Exception:
         return []
 
+@st.cache_data(ttl=3600)
 def get_sigungu_list(sido_code):
     url = f"{BASE_URL}/sigungu_v2"
     params = {"serviceKey": API_KEY, "upr_cd": sido_code, "numOfRows": 100, "_type": "json"}
@@ -43,20 +45,6 @@ def get_sigungu_list(sido_code):
     except Exception:
         return []
 
-@st.cache_data(ttl=3600)
-def get_kind_list():
-    url = f"{BASE_URL}/kind_v2"
-    params = {"serviceKey": API_KEY, "up_kind_cd": "429900", "numOfRows": 100, "_type": "json"}
-    try:
-        r = requests.get(url, params=params, timeout=10)
-        items = r.json().get("response", {}).get("body", {}).get("items", {}).get("item", [])
-        if not isinstance(items, list):
-            items = [items]
-        return items
-    except Exception:
-        return []
-
-@st.cache_data(ttl=1800)
 def get_all_animals(sido_code="", sigungu_code=""):
     url = f"{BASE_URL}/abandonmentPublic_v2"
     base_params = {
@@ -68,29 +56,47 @@ def get_all_animals(sido_code="", sigungu_code=""):
         "_type": "json",
     }
     base_params = {k: v for k, v in base_params.items() if v}
-    all_items = []
-    page = 1
-    total_count = 0
-    while True:
-        try:
-            params = {**base_params, "pageNo": page}
-            r = requests.get(url, params=params, timeout=15)
-            body = r.json().get("response", {}).get("body", {})
-            if page == 1:
-                total_count = int(body.get("totalCount", 0))
-            items = body.get("items", {}).get("item", [])
-            if isinstance(items, dict):
-                items = [items]
-            if not isinstance(items, list) or not items:
-                break
-            all_items.extend(items)
-            if len(all_items) >= total_count:
-                break
-            page += 1
-        except Exception:
-            break
-    return all_items
 
+    # 1페이지로 totalCount 먼저 확인
+    try:
+        r = requests.get(url, params={**base_params, "pageNo": 1}, timeout=15)
+        body = r.json().get("response", {}).get("body", {})
+        total_count = int(body.get("totalCount", 0))
+        items = body.get("items", {}).get("item", [])
+        if isinstance(items, dict):
+            items = [items]
+        if not isinstance(items, list):
+            items = []
+    except Exception:
+        return [], datetime.now()
+
+    all_items = list(items)
+    total_pages = -(-total_count // 100)
+
+    if total_pages > 1:
+        progress = st.progress(1 / total_pages, text=f"데이터 로딩 중... (1/{total_pages})")
+        for page in range(2, total_pages + 1):
+            try:
+                r = requests.get(url, params={**base_params, "pageNo": page}, timeout=15)
+                body = r.json().get("response", {}).get("body", {})
+                items = body.get("items", {}).get("item", [])
+                if isinstance(items, dict):
+                    items = [items]
+                if isinstance(items, list):
+                    all_items.extend(items)
+                progress.progress(page / total_pages, text=f"데이터 로딩 중... ({page}/{total_pages})")
+            except Exception:
+                break
+        progress.empty()
+
+    return all_items, datetime.now()
+
+def days_until(date_str):
+    try:
+        d = date(int(date_str[:4]), int(date_str[4:6]), int(date_str[6:]))
+        return (d - date.today()).days
+    except Exception:
+        return None
 
 # ==========================================
 # CSS
@@ -132,9 +138,6 @@ st.markdown("""
     margin-top: 0;
     line-height: 1.8;
 }
-.card-info br + * , .card-info {
-    display: block;
-}
 .card-divider {
     border: none;
     border-top: 1px solid #F1F5F9;
@@ -164,20 +167,24 @@ st.markdown("""
     font-size: 0.75rem;
     font-weight: 700;
 }
+.deadline-urgent {
+    color: #DC2626;
+    font-weight: 700;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
 # 헤더
 # ==========================================
-st.markdown("# 🐹 유기 햄스터 보호 현황")
-st.caption("전국 보호소의 유기 햄스터 공고를 한곳에서 확인하세요. 데이터 출처: 농림축산식품부 공공데이터포털")
+st.markdown("# 🐹 유기 기타축종 보호 현황")
+st.caption("전국 보호소의 유기동물 공고를 한곳에서 확인하세요. 데이터 출처: 농림축산식품부 공공데이터포털")
 st.divider()
 
 # ==========================================
 # 필터
 # ==========================================
-col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 0.4])
 
 with col1:
     sido_list = get_sido_list()
@@ -199,7 +206,7 @@ with col2:
             code = item.get("orgCd") or item.get("sigunguCd") or item.get("code", "")
             if name and code and code != selected_sido_code and name != selected_sido_name and name != "가정보호":
                 sigungu_options[name] = code
-        if selected_sido_code and len(selected_sido_code) >= 3:
+        if len(selected_sido_code) >= 3:
             sigungu_options["가정보호"] = selected_sido_code[:3] + "9999"
     else:
         sigungu_options = {"전체": ""}
@@ -214,6 +221,14 @@ with col3:
 with col4:
     search_query = st.text_input("동물 검색", placeholder="예: 햄스터, 거북이")
 
+with col5:
+    st.markdown("<div style='margin-top:28px'>", unsafe_allow_html=True)
+    if st.button("초기화", use_container_width=True):
+        st.session_state.page = 1
+        st.session_state.filter_key = ""
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
 st.divider()
 
 # ==========================================
@@ -223,7 +238,6 @@ PER_PAGE = 20
 if "page" not in st.session_state:
     st.session_state.page = 1
 
-# 필터 변경 시 페이지 초기화
 filter_key = f"{selected_sido_code}_{selected_sigungu_code}_{selected_state}_{search_query}"
 if st.session_state.get("filter_key") != filter_key:
     st.session_state.page = 1
@@ -232,14 +246,20 @@ if st.session_state.get("filter_key") != filter_key:
 # ==========================================
 # 데이터 로드
 # ==========================================
-with st.spinner("🐹 유기 햄스터 공고를 불러오는 중..."):
-    all_animals = get_all_animals(
-        sido_code=selected_sido_code,
-        sigungu_code=selected_sigungu_code,
-    )
+cache_key = f"{selected_sido_code}_{selected_sigungu_code}"
+if st.session_state.get("cache_key") != cache_key or "all_animals_data" not in st.session_state:
+    with st.spinner("🐹 공고를 불러오는 중..."):
+        all_animals, fetched_at = get_all_animals(
+            sido_code=selected_sido_code,
+            sigungu_code=selected_sigungu_code,
+        )
+    st.session_state.all_animals_data = all_animals
+    st.session_state.fetched_at = fetched_at
+    st.session_state.cache_key = cache_key
+else:
+    all_animals = st.session_state.all_animals_data
 
 # 상태 필터링 (로컬)
-STATE_MAP = {"protect": "보호", "complete": ["입양", "종료"], "etc": ""}
 if selected_state == "protect":
     all_animals = [a for a in all_animals if "보호" in a.get("processState", "")]
 elif selected_state == "complete":
@@ -263,13 +283,15 @@ if not animals:
     st.markdown("""
 <div style="text-align:center;padding:80px 20px;color:#94A3B8">
   <div style="font-size:60px">🐹</div>
-  <div style="font-size:1.1rem;margin-top:16px;font-weight:600">조건에 맞는 유기 햄스터가 없습니다</div>
+  <div style="font-size:1.1rem;margin-top:16px;font-weight:600">조건에 맞는 동물이 없습니다</div>
   <div style="font-size:0.85rem;margin-top:8px">필터를 변경해보세요.</div>
 </div>""", unsafe_allow_html=True)
     st.stop()
 
 total_pages = max(1, -(-total // PER_PAGE))
-st.markdown(f"**총 {total}건** | {st.session_state.page} / {total_pages} 페이지")
+fetched_at = st.session_state.get("fetched_at")
+fetched_str = fetched_at.strftime("%Y-%m-%d %H:%M") if fetched_at else ""
+st.markdown(f"**총 {total}건** | {st.session_state.page} / {total_pages} 페이지 &nbsp;&nbsp; <span style='color:#94A3B8;font-size:0.8rem'>🕐 {fetched_str} 기준</span>", unsafe_allow_html=True)
 
 # ==========================================
 # 카드 목록
@@ -289,17 +311,19 @@ for row in rows:
         with col:
           with st.container(border=True):
             img_url = animal.get("popfile1", "") or animal.get("popfile2", "")
-            kind_nm = animal.get("kindNm", "햄스터")
+            kind_nm = animal.get("kindNm", "기타축종")
             notice_no = animal.get("noticeNo", "")
             sex = {"M": "수컷", "F": "암컷", "Q": "미상"}.get(animal.get("sexCd", "Q"), "미상")
             age = animal.get("age", "미상")
             shelter = animal.get("careNm", "")
+            care_tel = animal.get("careTel", "")
             org = animal.get("orgNm", "")
             notice_edt = animal.get("noticeEdt", "")
             state = animal.get("processState", "")
             color = animal.get("colorCd", "")
             weight = animal.get("weight", "")
             feature = animal.get("specialMark", "")
+            happen_place = animal.get("happenPlace", "")
             desertion_no = animal.get("desertionNo", "")
             detail_url = f"https://www.animal.go.kr/front/awtis/public/publicDtl.do?desertionNo={desertion_no}" if desertion_no else ""
             badge = STATE_BADGE.get(
@@ -310,6 +334,13 @@ for row in rows:
             notice_edt_fmt = f"{notice_edt[:4]}-{notice_edt[4:6]}-{notice_edt[6:]}" if len(notice_edt) == 8 else notice_edt
             happen_dt = animal.get("happenDt", "")
             happen_dt_fmt = f"{happen_dt[:4]}-{happen_dt[4:6]}-{happen_dt[6:]}" if len(happen_dt) == 8 else ""
+
+            # 마감 임박 계산
+            d_day = days_until(notice_edt) if len(notice_edt) == 8 else None
+            if d_day is not None and d_day <= 3:
+                deadline_html = f'📅 마감: <span class="deadline-urgent">{notice_edt_fmt} (D{d_day:+d})</span><br>'
+            else:
+                deadline_html = f'📅 마감: <b>{notice_edt_fmt}</b><br>'
 
             if img_url:
                 st.image(img_url, use_container_width=True)
@@ -329,10 +360,10 @@ for row in rows:
     🎨 {color}<br>
     <hr class="card-divider">
     🏠 <b>{shelter}</b><br>
-    📍 {org}<br>
+    {f"📞 {care_tel}<br>" if care_tel else ""}📍 {org}<br>
+    {f"📌 발견: {happen_place}<br>" if happen_place else ""}
     <hr class="card-divider">
-    {f"🚑 구조일: <b>{happen_dt_fmt}</b><br>" if happen_dt_fmt else ""}📅 마감: <b>{notice_edt_fmt}</b><br>
-    💬 <span style="color:#475569">{feature}</span>
+    {f"🚑 구조일: <b>{happen_dt_fmt}</b><br>" if happen_dt_fmt else ""}{deadline_html}💬 <span style="color:#475569">{feature}</span>
   </div>
 </div>{card_link_close}""", unsafe_allow_html=True)
 
