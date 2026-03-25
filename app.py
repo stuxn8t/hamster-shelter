@@ -56,32 +56,41 @@ def get_kind_list():
     except Exception:
         return []
 
-def get_abandoned_hamsters(sido_code="", sigungu_code="", kind_code="", state="", page=1, num_of_rows=20):
+@st.cache_data(ttl=1800)
+def get_all_animals(sido_code="", sigungu_code="", state=""):
     url = f"{BASE_URL}/abandonmentPublic_v2"
-    params = {
+    base_params = {
         "serviceKey": API_KEY,
         "upkind": "429900",
-        "kind": kind_code,
         "upr_cd": sido_code,
         "org_cd": sigungu_code,
         "state": state,
-        "pageNo": page,
-        "numOfRows": num_of_rows,
+        "numOfRows": 100,
         "_type": "json",
     }
-    params = {k: v for k, v in params.items() if v}
-    try:
-        r = requests.get(url, params=params, timeout=10)
-        body = r.json().get("response", {}).get("body", {})
-        total_count = int(body.get("totalCount", 0))
-        items = body.get("items", {}).get("item", [])
-        if isinstance(items, dict):
-            items = [items]
-        if not isinstance(items, list):
-            items = []
-        return items, total_count
-    except Exception:
-        return [], 0
+    base_params = {k: v for k, v in base_params.items() if v}
+    all_items = []
+    page = 1
+    total_count = 0
+    while True:
+        try:
+            params = {**base_params, "pageNo": page}
+            r = requests.get(url, params=params, timeout=15)
+            body = r.json().get("response", {}).get("body", {})
+            if page == 1:
+                total_count = int(body.get("totalCount", 0))
+            items = body.get("items", {}).get("item", [])
+            if isinstance(items, dict):
+                items = [items]
+            if not isinstance(items, list) or not items:
+                break
+            all_items.extend(items)
+            if len(all_items) >= total_count:
+                break
+            page += 1
+        except Exception:
+            break
+    return all_items
 
 
 # ==========================================
@@ -193,20 +202,12 @@ with col2:
     selected_sigungu_code = sigungu_options[selected_sigungu_name]
 
 with col3:
-    kind_list = get_kind_list()
-    kind_options = {"전체": ""}
-    for item in kind_list:
-        name = item.get("kindNm", "")
-        code = str(item.get("kindCd", ""))
-        if name and code:
-            kind_options[name] = code
-    selected_kind_name = st.selectbox("동물종류", list(kind_options.keys()))
-    selected_kind_code = kind_options[selected_kind_name]
-
-with col4:
     state_options = {"보호중": "protect", "전체": "", "입양완료": "complete", "기타": "etc"}
     selected_state_name = st.selectbox("상태", list(state_options.keys()))
     selected_state = state_options[selected_state_name]
+
+with col4:
+    search_query = st.text_input("동물 검색", placeholder="예: 햄스터, 거북이")
 
 st.divider()
 
@@ -218,7 +219,7 @@ if "page" not in st.session_state:
     st.session_state.page = 1
 
 # 필터 변경 시 페이지 초기화
-filter_key = f"{selected_sido_code}_{selected_sigungu_code}_{selected_kind_code}_{selected_state}"
+filter_key = f"{selected_sido_code}_{selected_sigungu_code}_{selected_state}"
 if st.session_state.get("filter_key") != filter_key:
     st.session_state.page = 1
     st.session_state.filter_key = filter_key
@@ -227,14 +228,23 @@ if st.session_state.get("filter_key") != filter_key:
 # 데이터 로드
 # ==========================================
 with st.spinner("🐹 유기 햄스터 공고를 불러오는 중..."):
-    animals, total = get_abandoned_hamsters(
+    all_animals = get_all_animals(
         sido_code=selected_sido_code,
         sigungu_code=selected_sigungu_code,
-        kind_code=selected_kind_code,
         state=selected_state,
-        page=st.session_state.page,
-        num_of_rows=PER_PAGE,
     )
+
+# 검색어 필터링 (로컬)
+if search_query:
+    query = search_query.strip().lower()
+    all_animals = [
+        a for a in all_animals
+        if query in (a.get("kindFullNm", "") + a.get("kindNm", "") + a.get("colorCd", "") + a.get("specialMark", "")).lower()
+    ]
+
+total = len(all_animals)
+start = (st.session_state.page - 1) * PER_PAGE
+animals = all_animals[start:start + PER_PAGE]
 
 if not animals:
     st.markdown("""
