@@ -6,7 +6,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_KEY = os.environ.get("API_KEY", "")
+try:
+    API_KEY = st.secrets["API_KEY"]
+except Exception:
+    API_KEY = os.environ.get("API_KEY", "")
 BASE_URL = "http://apis.data.go.kr/1543061/abandonmentPublicService_v2"
 
 st.set_page_config(
