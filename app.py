@@ -221,7 +221,7 @@ for row in rows:
             weight = animal.get("weight", "")
             feature = animal.get("specialMark", "")
             desertion_no = animal.get("desertionNo", "")
-            detail_url = f"https://www.animal.go.kr/front/awtis/public/publicView.do?boardNo={desertion_no}" if desertion_no else ""
+            detail_url = f"https://www.animal.go.kr/front/awtis/public/publicDtl.do?boardNo={desertion_no}" if desertion_no else ""
             badge = STATE_BADGE.get(
                 "protect" if "보호" in state else
                 "complete" if "입양" in state or "종료" in state else "etc",
