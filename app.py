@@ -173,8 +173,6 @@ with col2:
                 sigungu_options[name] = code
     else:
         sigungu_options = {"전체": ""}
-    if selected_sido_code and sigungu_list and len(sigungu_options) == 1:
-        st.caption(f"디버그: {sigungu_list[0] if sigungu_list else '없음'}")
     selected_sigungu_name = st.selectbox("시군구", list(sigungu_options.keys()))
     selected_sigungu_code = sigungu_options[selected_sigungu_name]
 
@@ -290,6 +288,7 @@ with pcol1:
     if st.session_state.page > 1:
         if st.button("◀ 이전"):
             st.session_state.page -= 1
+            st.session_state.scroll_top = True
             st.rerun()
 with pcol2:
     st.markdown(f"<div style='text-align:center;padding-top:6px'>{st.session_state.page} / {total_pages}</div>", unsafe_allow_html=True)
@@ -297,4 +296,9 @@ with pcol3:
     if st.session_state.page < total_pages:
         if st.button("다음 ▶"):
             st.session_state.page += 1
+            st.session_state.scroll_top = True
             st.rerun()
+
+if st.session_state.get("scroll_top"):
+    st.session_state.scroll_top = False
+    st.markdown("<script>window.scrollTo(0, 0);</script>", unsafe_allow_html=True)
