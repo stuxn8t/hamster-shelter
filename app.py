@@ -301,6 +301,8 @@ for row in rows:
                 '<span class="badge-etc">기타</span>'
             )
             notice_edt_fmt = f"{notice_edt[:4]}-{notice_edt[4:6]}-{notice_edt[6:]}" if len(notice_edt) == 8 else notice_edt
+            happen_dt = animal.get("happenDt", "")
+            happen_dt_fmt = f"{happen_dt[:4]}-{happen_dt[4:6]}-{happen_dt[6:]}" if len(happen_dt) == 8 else ""
 
             if img_url:
                 st.image(img_url, use_container_width=True)
@@ -319,7 +321,7 @@ for row in rows:
     🎨 {color}<br>
     🏠 {shelter}<br>
     📍 {org}<br>
-    📅 공고 마감: {notice_edt_fmt}<br>
+    {f"🚑 구조일시: {happen_dt_fmt}<br>" if happen_dt_fmt else ""}📅 공고 마감: {notice_edt_fmt}<br>
     💬 {feature}
   </div>
 </div>{card_link_close}""", unsafe_allow_html=True)
