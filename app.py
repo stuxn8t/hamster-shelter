@@ -173,6 +173,8 @@ with col2:
                 sigungu_options[name] = code
     else:
         sigungu_options = {"전체": ""}
+    if selected_sido_code and sigungu_list and len(sigungu_options) == 1:
+        st.caption(f"디버그: {sigungu_list[0] if sigungu_list else '없음'}")
     selected_sigungu_name = st.selectbox("시군구", list(sigungu_options.keys()))
     selected_sigungu_code = sigungu_options[selected_sigungu_name]
 
