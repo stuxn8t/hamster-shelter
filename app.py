@@ -245,6 +245,7 @@ for row in rows:
     🏠 {shelter}<br>
     📍 {org}<br>
     📅 공고 마감: {notice_edt_fmt}<br>
-    💬 {feature}
+    💬 {feature}<br>
+    🖼️ {img_url}
   </div>
 </div>""", unsafe_allow_html=True)
