@@ -42,31 +42,43 @@ def get_sigungu_list(sido_code):
     except Exception:
         return []
 
-def get_abandoned_hamsters(sido_code="", sigungu_code="", state="", page=1, num_of_rows=20):
+def get_abandoned_hamsters(sido_code="", sigungu_code="", state=""):
     url = f"{BASE_URL}/abandonmentPublic_v2"
-    params = {
+    base_params = {
         "serviceKey": API_KEY,
         "upkind": "429900",
         "upr_cd": sido_code,
         "org_cd": sigungu_code,
         "state": state,
-        "pageNo": page,
-        "numOfRows": num_of_rows,
+        "numOfRows": 100,
         "_type": "json",
     }
-    params = {k: v for k, v in params.items() if v}
-    try:
-        r = requests.get(url, params=params, timeout=10)
-        body = r.json().get("response", {}).get("body", {})
-        total_count = int(body.get("totalCount", 0))
-        items = body.get("items", {}).get("item", [])
-        if isinstance(items, dict):
-            items = [items]
-        if not isinstance(items, list):
-            items = []
-        return items, total_count
-    except Exception:
-        return [], 0
+    base_params = {k: v for k, v in base_params.items() if v}
+
+    all_items = []
+    page = 1
+    total_count = 0
+
+    while True:
+        try:
+            params = {**base_params, "pageNo": page}
+            r = requests.get(url, params=params, timeout=10)
+            body = r.json().get("response", {}).get("body", {})
+            if page == 1:
+                total_count = int(body.get("totalCount", 0))
+            items = body.get("items", {}).get("item", [])
+            if isinstance(items, dict):
+                items = [items]
+            if not isinstance(items, list) or not items:
+                break
+            all_items.extend(items)
+            if len(all_items) >= total_count:
+                break
+            page += 1
+        except Exception:
+            break
+
+    return all_items, total_count
 
 
 # ==========================================
