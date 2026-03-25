@@ -57,14 +57,13 @@ def get_kind_list():
         return []
 
 @st.cache_data(ttl=1800)
-def get_all_animals(sido_code="", sigungu_code="", state=""):
+def get_all_animals(sido_code="", sigungu_code=""):
     url = f"{BASE_URL}/abandonmentPublic_v2"
     base_params = {
         "serviceKey": API_KEY,
         "upkind": "429900",
         "upr_cd": sido_code,
         "org_cd": sigungu_code,
-        "state": state,
         "numOfRows": 100,
         "_type": "json",
     }
@@ -219,7 +218,7 @@ if "page" not in st.session_state:
     st.session_state.page = 1
 
 # 필터 변경 시 페이지 초기화
-filter_key = f"{selected_sido_code}_{selected_sigungu_code}_{selected_state}"
+filter_key = f"{selected_sido_code}_{selected_sigungu_code}_{selected_state}_{search_query}"
 if st.session_state.get("filter_key") != filter_key:
     st.session_state.page = 1
     st.session_state.filter_key = filter_key
@@ -231,8 +230,16 @@ with st.spinner("🐹 유기 햄스터 공고를 불러오는 중..."):
     all_animals = get_all_animals(
         sido_code=selected_sido_code,
         sigungu_code=selected_sigungu_code,
-        state=selected_state,
     )
+
+# 상태 필터링 (로컬)
+STATE_MAP = {"protect": "보호", "complete": ["입양", "종료"], "etc": ""}
+if selected_state == "protect":
+    all_animals = [a for a in all_animals if "보호" in a.get("processState", "")]
+elif selected_state == "complete":
+    all_animals = [a for a in all_animals if "입양" in a.get("processState", "") or "종료" in a.get("processState", "")]
+elif selected_state == "etc":
+    all_animals = [a for a in all_animals if "보호" not in a.get("processState", "") and "입양" not in a.get("processState", "") and "종료" not in a.get("processState", "")]
 
 # 검색어 필터링 (로컬)
 if search_query:
