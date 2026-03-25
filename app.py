@@ -96,7 +96,7 @@ st.markdown("""
     height: 100%;
 }
 .card-placeholder {
-    height: 120px;
+    height: 240px;
     background: #F1F5F9;
     border-radius: 8px;
     display: flex;
