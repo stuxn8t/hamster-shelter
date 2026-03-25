@@ -1,6 +1,7 @@
 import os
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 from dotenv import load_dotenv
 
@@ -301,4 +302,4 @@ with pcol3:
 
 if st.session_state.get("scroll_top"):
     st.session_state.scroll_top = False
-    st.markdown("<script>window.scrollTo(0, 0);</script>", unsafe_allow_html=True)
+    components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
