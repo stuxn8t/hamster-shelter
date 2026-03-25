@@ -155,12 +155,10 @@ with col1:
     sido_list = get_sido_list()
     sido_options = {"전체": ""}
     for item in sido_list:
-        name = item.get("orgNm") or item.get("sidonm") or item.get("name", "")
+        name = item.get("orgdownNm") or item.get("orgNm") or item.get("sidonm") or item.get("name", "")
         code = item.get("orgCd") or item.get("sidoCd") or item.get("code", "")
         if name and code:
             sido_options[name] = code
-    if sido_list and len(sido_options) == 1:
-        st.caption(f"디버그: {sido_list[0] if sido_list else '없음'}")
     selected_sido_name = st.selectbox("시도", list(sido_options.keys()))
     selected_sido_code = sido_options[selected_sido_name]
 
@@ -169,7 +167,7 @@ with col2:
         sigungu_list = get_sigungu_list(selected_sido_code)
         sigungu_options = {"전체": ""}
         for item in sigungu_list:
-            name = item.get("orgNm") or item.get("sigungunm") or item.get("name", "")
+            name = item.get("orgdownNm") or item.get("orgNm") or item.get("sigungunm") or item.get("name", "")
             code = item.get("orgCd") or item.get("sigunguCd") or item.get("code", "")
             if name and code:
                 sigungu_options[name] = code
