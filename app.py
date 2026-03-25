@@ -1,5 +1,4 @@
 import os
-import base64
 import requests
 import streamlit as st
 import pandas as pd
@@ -13,13 +12,6 @@ except Exception:
     API_KEY = os.environ.get("API_KEY", "")
 BASE_URL = "http://apis.data.go.kr/1543061/abandonmentPublicService_v2"
 
-@st.cache_data(ttl=3600)
-def fetch_image_b64(url):
-    try:
-        r = requests.get(url, timeout=5)
-        return base64.b64encode(r.content).decode()
-    except Exception:
-        return ""
 
 st.set_page_config(
     page_title="유기 햄스터 보호 현황",
@@ -103,12 +95,6 @@ st.markdown("""
     margin-bottom: 16px;
     height: 100%;
 }
-.card img {
-    width: 100%;
-    border-radius: 8px;
-    object-fit: cover;
-    height: 120px;
-}
 .card-placeholder {
     height: 120px;
     background: #F1F5F9;
@@ -117,6 +103,12 @@ st.markdown("""
     align-items: center;
     justify-content: center;
     font-size: 2rem;
+    margin-bottom: 8px;
+}
+[data-testid="stImage"] img {
+    height: 120px !important;
+    object-fit: cover !important;
+    border-radius: 8px !important;
 }
 .card-name {
     font-size: 1rem;
@@ -260,17 +252,15 @@ for row in rows:
             notice_edt_fmt = f"{notice_edt[:4]}-{notice_edt[4:6]}-{notice_edt[6:]}" if len(notice_edt) == 8 else notice_edt
 
             if img_url:
-                b64 = fetch_image_b64(img_url)
-                img_tag = f'<img src="data:image/jpeg;base64,{b64}">' if b64 else '<div class="card-placeholder">🐹</div>'
+                st.image(img_url, use_container_width=True)
             else:
-                img_tag = '<div class="card-placeholder">🐹</div>'
+                st.markdown('<div class="card-placeholder">🐹</div>', unsafe_allow_html=True)
 
             card_link_open = f'<a href="{detail_url}" target="_blank" style="text-decoration:none;color:inherit;">' if detail_url else ""
             card_link_close = "</a>" if detail_url else ""
 
             st.markdown(f"""
 {card_link_open}<div class="card">
-  {img_tag}
   <div class="card-name">{kind_nm} {badge}</div>
   <div class="card-info">
     📋 {notice_no}<br>
