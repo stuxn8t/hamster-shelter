@@ -39,52 +39,31 @@ def get_sigungu_list(sido_code):
     except Exception:
         return []
 
-def get_hamster_kind_codes():
-    url = f"{BASE_URL}/kind_v2"
-    params = {"serviceKey": API_KEY, "up_kind_cd": "429", "numOfRows": 100, "_type": "json"}
-    try:
-        r = requests.get(url, params=params, timeout=10)
-        items = r.json().get("response", {}).get("body", {}).get("items", {}).get("item", [])
-        if not isinstance(items, list):
-            items = [items]
-        return [str(item.get("kindCd", "")) for item in items if item.get("kindCd")]
-    except Exception:
-        return []
-
 def get_abandoned_hamsters(sido_code="", sigungu_code="", state="", page=1, num_of_rows=20):
     url = f"{BASE_URL}/abandonmentPublic_v2"
-    kind_codes = get_hamster_kind_codes()
-    results = []
-    total_count = 0
-
-    if not kind_codes:
+    params = {
+        "serviceKey": API_KEY,
+        "upkind": "429",
+        "upr_cd": sido_code,
+        "org_cd": sigungu_code,
+        "state": state,
+        "pageNo": page,
+        "numOfRows": num_of_rows,
+        "_type": "json",
+    }
+    params = {k: v for k, v in params.items() if v}
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        body = r.json().get("response", {}).get("body", {})
+        total_count = int(body.get("totalCount", 0))
+        items = body.get("items", {}).get("item", [])
+        if isinstance(items, dict):
+            items = [items]
+        if not isinstance(items, list):
+            items = []
+        return items, total_count
+    except Exception:
         return [], 0
-
-    for kind_cd in kind_codes:
-        params = {
-            "serviceKey": API_KEY,
-            "upkind": "429",
-            "kind": kind_cd,
-            "upr_cd": sido_code,
-            "org_cd": sigungu_code,
-            "state": state,
-            "pageNo": page,
-            "numOfRows": num_of_rows,
-            "_type": "json",
-        }
-        params = {k: v for k, v in params.items() if v}
-        try:
-            r = requests.get(url, params=params, timeout=10)
-            body = r.json().get("response", {}).get("body", {})
-            total_count += int(body.get("totalCount", 0))
-            items = body.get("items", {}).get("item", [])
-            if isinstance(items, dict):
-                items = [items]
-            results.extend(items)
-        except Exception:
-            continue
-
-    return results, total_count
 
 
 # ==========================================
