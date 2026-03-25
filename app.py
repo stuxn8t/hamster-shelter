@@ -169,10 +169,10 @@ with col2:
         for item in sigungu_list:
             name = item.get("orgdownNm") or item.get("orgNm") or item.get("sigungunm") or item.get("name", "")
             code = item.get("orgCd") or item.get("sigunguCd") or item.get("code", "")
-            if name == "가정보호":
-                st.caption(f"가정보호 코드: {code}")
-            if name and code and code != selected_sido_code and name != selected_sido_name:
+            if name and code and code != selected_sido_code and name != selected_sido_name and name != "가정보호":
                 sigungu_options[name] = code
+        if selected_sido_code and len(selected_sido_code) >= 3:
+            sigungu_options["가정보호"] = selected_sido_code[:3] + "9999"
     else:
         sigungu_options = {"전체": ""}
     selected_sigungu_name = st.selectbox("시군구", list(sigungu_options.keys()))
