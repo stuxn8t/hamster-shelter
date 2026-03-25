@@ -171,7 +171,7 @@ with col2:
     selected_sigungu_code = sigungu_options[selected_sigungu_name]
 
 with col3:
-    state_options = {"전체": "", "보호중": "protect", "입양완료": "complete", "기타": "etc"}
+    state_options = {"보호중": "protect", "전체": "", "입양완료": "complete", "기타": "etc"}
     selected_state_name = st.selectbox("상태", list(state_options.keys()))
     selected_state = state_options[selected_state_name]
 
