@@ -181,10 +181,6 @@ with st.spinner("🐹 유기 햄스터 공고를 불러오는 중..."):
         state=selected_state,
     )
 
-if animals:
-    with st.expander("🔍 첫 번째 동물 raw 데이터"):
-        st.json(animals[0])
-
 if not animals:
     st.markdown("""
 <div style="text-align:center;padding:80px 20px;color:#94A3B8">
@@ -212,7 +208,7 @@ for row in rows:
     cols = st.columns(COLS)
     for col, animal in zip(cols, row):
         with col:
-            img_url = animal.get("popfile", "")
+            img_url = animal.get("popfile1", "") or animal.get("popfile2", "")
             kind_nm = animal.get("kindNm", "햄스터")
             notice_no = animal.get("noticeNo", "")
             sex = {"M": "수컷", "F": "암컷", "Q": "미상"}.get(animal.get("sexCd", "Q"), "미상")
