@@ -182,6 +182,18 @@ with st.spinner("🐹 유기 햄스터 공고를 불러오는 중..."):
     )
 
 if not animals:
+    # 디버그: API 원본 응답 확인
+    with st.expander("🔍 API 디버그 정보"):
+        url = f"{BASE_URL}/abandonmentPublic_v2"
+        params = {"serviceKey": API_KEY, "upkind": "429", "numOfRows": 5, "_type": "json"}
+        try:
+            r = requests.get(url, params=params, timeout=10)
+            st.write("**API Key (앞 8자):**", API_KEY[:8] if API_KEY else "없음")
+            st.write("**HTTP Status:**", r.status_code)
+            st.json(r.json())
+        except Exception as e:
+            st.error(str(e))
+
     st.markdown("""
 <div style="text-align:center;padding:80px 20px;color:#94A3B8">
   <div style="font-size:60px">🐹</div>
